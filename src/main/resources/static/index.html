@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0"/>
+    <title>DocHelper 演示首页</title>
+    <!--<link rel="stylesheet" href="css/viewer.min.css"/>-->
+    <!--<link rel="stylesheet" href="css/loading.css"/>-->
+    <!--<link rel="stylesheet" href="bootstrap/css/bootstrap.min.css"/>-->
+    <!--<link rel="stylesheet" href="bootstrap-table/bootstrap-table.min.css"/>-->
+    <!--<link rel="stylesheet" href="gitalk/gitalk.css"/>-->
+    <script type="text/javascript" src="js/jquery-3.0.0.min.js"></script>
+    <script type="text/javascript" src="js/jquery.form.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap-table.min.js"></script>
+    <!--<script type="text/javascript" src="gitalk/gitalk.min.js"></script>-->
+    <script type="text/javascript" src="js/base64.min.js"></script>
+    <script type="text/javascript" src="js/marked.min.js"></script>
+</head>
+
+<body>
+<div class="panel-group container" id="accordion">
+    <h1>DocHelper测试界面(如果有帮助,求个star)</h1>
+    <p>使用过程中任何问题,可以联系作者(微信:himaoxiaomeng,注明来源:DocHelper)</p>
+    <h3>项目地址(web版)===><a target="_blank" href="https://gitee.com/gaozexi/doc-helper">DocHelperWeb</a></h3>
+    <p>ps:web版本临时制作,由于依赖的底层包 DocHelper 也是面向工具类的感念(时间仓促),使用的是static内存存储,web上会有并发问题,后期会改掉</p>
+    <h3>项目地址(底层依赖)===><a target="_blank" href="https://gitee.com/gaozexi/doc-helper">DocHelper</a></h3>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h4 class="panel-title">
+                上传配置文件(<a href="/template">下载配置模板</a>)
+            </h4>
+        </div>
+        <div class="panel-body" id="container">
+            <div style="padding: 10px">
+                <form enctype="multipart/form-data" id="fileUpload">
+                    <input type="file" name="file"/>
+                    <input type="button" id="btnSubmit" value=" 上 传 "/>
+                </form>
+            </div>
+            <div style="padding: 10px">
+                <button id="buildDocBtn"><a href="/doc/build">点击生成Doc</a></button>
+            </div>
+        </div>
+
+
+    </div>
+    <div class="panel panel-default">
+
+        <br/>
+        <h2>简要说明:</h2>
+
+        <div>
+            <h3>DocHelper 文档生成器</h3>
+            <p>关于配置书写的详细文档见,<a href="https://gitee.com/gaozexi/doc-helper" target="_blank">DocHelper</a>的主页,readme会有详细说明
+            </p>
+            <p>功能支持:
+            <li>1.支持任意层级标题的文档生成,自测9级,理论任意层级嵌套</li>
+            <li>2.仅支持docx文档的生成</li>
+            <li>3.支持文本,图片,表格,API(swagger2协议),HTML片段的生成</li>
+            <li>4.支持水印,目录,页眉,页脚等功能</li>
+            </p>
+        </div>
+        <pre style="font-family: 'Microsoft YaHei UI'">
+
+    DocHelper 开发的背景是因为项目需要写验收详设文档,但是开发过程中,很多时候在功能开发初期已经产出过类似的文档,
+但是验收文档总会有格式上的要求,所以书写对有格式要求的文档,更是一个是体力活,简直折磨有没有;
+
+
+    此外还有:
+    作为格式要求高的项目,文档标题序号一定会有要求,但是word长文本编排,除了自身办公室文员,很少有人能处理很好的, 联
+想下当年的论文;当然段落少的,变化少的,你不会用标题编号功能,自然可以手写,效果没问题,但是副作用有三个:
+
+    a. 无法生成标题目录
+
+    b. 一旦中间的目录,需要改动,增加或者删除,对于编号的维护,那将是噩梦;有甚者,你可能要维护几百个标题编号,而最可怕
+    的是,维护了之后,你仍然应对不了变化
+
+    c. 无法应对频繁改动的文档
+
+    手动写word标题编号,层级少,还可以,但是层级多的话,就很少能控制得当了,有的时候前面都好好的,新增一个标题,基本都会
+自动编号,但是往往层级之间的编号处理需要一定的技术,比如:6.2.1 下一个兄弟标题序号很简单,直接拷贝就得到,
+但是6.2.1.1需要你手动处理一番了,6.2.3.2.1亦是如此,往往牵一发而动全身!
+
+    时间仓促,bug多多,还请体谅
+                                                                                            Edit by 毛小蒙
+                                                                                            Date: 2023-06-10
+                </pre>
+
+        <div id="html-output"></div>
+    </div>
+
+    <div class="panel-body">
+        <div id="comments"></div>
+    </div>
+
+</div>
+
+<script>
+
+    $(function () {
+
+        $("#buildDocBtn").hide();
+
+        //上传配置文件
+        $("#btnSubmit").click(function () {
+
+            $("#fileUpload").ajaxSubmit({
+                success: function (data) {
+                    // 上传完成，刷新table
+                    if (0 !== data.code) {
+                        alert(data.msg);
+                    } else {
+                        alert("配置文件上传成功");
+                        $("#buildDocBtn").show();
+                    }
+                },
+                error: function () {
+                    alert('上传失败，请联系管理员');
+                },
+                url: '/upload/config', /*设置post提交到的页面*/
+                type: "post", /*设置表单以post方法提交*/
+                dataType: "json" /*设置返回值类型为文本*/
+            });
+        });
+    });
+</script>
+</body>
+</html>
